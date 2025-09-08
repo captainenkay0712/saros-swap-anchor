@@ -1,0 +1,28 @@
+[package]
+name = "saros-swap-anchor"
+version = "0.1.0"
+authors = ["NinetyEight"]
+license = "Apache-2.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "saros_swap_anchor"
+
+[features]
+anchor-debug = []
+cpi = ["no-entrypoint"]
+custom-heap = []
+custom-panic = []
+default = []
+devnet = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+mainnet = []
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+
+[dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
+
