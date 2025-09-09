@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::hash::hash;
 
+use crate::error::ErrorCode;
+
+pub const DISCRIMINATOR_LENGTH: u64 = 8;
+
 pub fn calculate_discriminator(account_name: &str) -> [u8; 8] {
     let preimage = format!("account:{}", account_name);
     let hash_result = hash(preimage.as_bytes());
@@ -9,43 +13,49 @@ pub fn calculate_discriminator(account_name: &str) -> [u8; 8] {
     discriminator
 }
 
-pub fn pack_to_anchor_format(
+pub fn wrap_solana_account(
     solana_account: &AccountInfo,
-    init_bytes_length: u64,
+    before_bytes_length: u64,
     discriminator: [u8; 8],
-) -> Vec<u8> {
+) -> Result<()> {
     let account_data = solana_account.data.borrow();
-    let mut anchor_data = Vec::with_capacity(8 + account_data.len() - init_bytes_length as usize);
-    
+
+    require!(
+        (before_bytes_length as usize) <= account_data.len(),
+        ErrorCode::InvalidAccountData
+    );
+
+    let new_len = DISCRIMINATOR_LENGTH as usize + account_data.len() - before_bytes_length as usize;
+
+    let mut anchor_data = Vec::with_capacity(new_len);
     anchor_data.extend_from_slice(&discriminator);
-    
-    if account_data.len() > 1 {
-        anchor_data.extend_from_slice(&account_data[1..]);
-    }
-    
-    anchor_data
+    anchor_data.extend_from_slice(&account_data[before_bytes_length as usize..]);
+
+    drop(account_data);
+
+    solana_account.resize(new_len)?;
+    solana_account.data.borrow_mut().copy_from_slice(&anchor_data);
+
+    Ok(())
 }
 
-pub fn pack_to_anchor_format_auto_discriminator(
+pub fn unwrap_solana_account(
     solana_account: &AccountInfo,
-    init_bytes_length: u64,
-    account_name: &str,
-) -> Vec<u8> {
-    pack_to_anchor_format(solana_account, init_bytes_length, calculate_discriminator(account_name))
-}
+    before_bytes: Option<Vec<u8>>,
+) -> Result<()> {
+    let account_data = solana_account.data.borrow();
+    let before_bytes_vec = before_bytes.unwrap_or_default();
 
-pub fn unpack_from_anchor_format(
-    anchor_account: &AccountInfo,
-    init_bytes: Option<Vec<u8>>,
-) -> Vec<u8> {
-    let anchor_account_data = anchor_account.data.borrow();
-    let mut solana_data = Vec::with_capacity(init_bytes.as_ref().map_or(0, |v| v.len()) + anchor_account_data.len() - 8);
-    
-    solana_data.extend_from_slice(&init_bytes.unwrap_or_default());
-    
-    if anchor_account_data.len() > 8 {
-        solana_data.extend_from_slice(&anchor_account_data[8..]);
-    }
-    
-    solana_data
+    let new_len = before_bytes_vec.len() + account_data.len() - DISCRIMINATOR_LENGTH as usize;
+
+    let mut solana_data = Vec::with_capacity(new_len);
+    solana_data.extend_from_slice(&before_bytes_vec);
+    solana_data.extend_from_slice(&account_data[DISCRIMINATOR_LENGTH as usize..]);
+
+    drop(account_data);
+
+    solana_account.resize(new_len)?;
+    solana_account.data.borrow_mut().copy_from_slice(&solana_data);
+
+    Ok(())
 }
