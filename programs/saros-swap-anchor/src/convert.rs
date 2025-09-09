@@ -40,22 +40,22 @@ pub fn wrap_solana_account(
 }
 
 pub fn unwrap_solana_account(
-    solana_account: &AccountInfo,
+    anchor_account: &AccountInfo,
     before_bytes: Option<Vec<u8>>,
 ) -> Result<()> {
-    let account_data = solana_account.data.borrow();
+    let account_data = anchor_account.data.borrow();
     let before_bytes_vec = before_bytes.unwrap_or_default();
 
     let new_len = before_bytes_vec.len() + account_data.len() - DISCRIMINATOR_LENGTH as usize;
 
-    let mut solana_data = Vec::with_capacity(new_len);
-    solana_data.extend_from_slice(&before_bytes_vec);
-    solana_data.extend_from_slice(&account_data[DISCRIMINATOR_LENGTH as usize..]);
+    let mut anchor_data = Vec::with_capacity(new_len);
+    anchor_data.extend_from_slice(&before_bytes_vec);
+    anchor_data.extend_from_slice(&account_data[DISCRIMINATOR_LENGTH as usize..]);
 
     drop(account_data);
 
-    solana_account.resize(new_len)?;
-    solana_account.data.borrow_mut().copy_from_slice(&solana_data);
+    anchor_account.resize(new_len)?;
+    anchor_account.data.borrow_mut().copy_from_slice(&anchor_data);
 
     Ok(())
 }

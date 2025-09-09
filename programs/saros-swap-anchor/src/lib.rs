@@ -23,29 +23,8 @@ pub mod saros_swap_anchor {
             convert::calculate_discriminator("SwapV1"),
         )?;
 
-        // let swap_data = &mut (*ctx.accounts.solana_account.data).borrow_mut();
-        // let swap_account = SwapV1::try_from_slice(&swap_data).unwrap();
-
-
-        // convert::wrap_solana_account(
-        //     &ctx.accounts.token_account, 
-        //     0, // no init bytes to skip
-        //     convert::calculate_discriminator("TokenAccount")
-        // )?;
-
-        // let token_data = &mut (*ctx.accounts.token_account.data).borrow_mut();
-        // let token_account = TokenAccount::try_from_slice(&token_data).unwrap();
-
-        // convert::wrap_solana_account(
-        //     &ctx.accounts.mint_account, 
-        //     0,
-        //     convert::calculate_discriminator("Mint")
-        // )?;
-
-        // println!("SwapV1 is_initialized: {}", swap_account.is_initialized);
-        // println!("SwapV1 bump_seed: {}", swap_account.bump_seed);
-
-        println!("✅ Wrap to Anchor format completed");
+        let swap_data = &mut (*ctx.accounts.solana_account.data).borrow_mut();
+        let swap_account = SwapV1::try_from_slice(&swap_data).unwrap();
         
         Ok(())
     }
